@@ -1,0 +1,201 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red155\green162\blue177;}
+{\*\expandedcolortbl;;\cssrgb\c67059\c69804\c74902;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs28 \cf2 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 .data\
+list:       .space 128\
+size:       .word\
+result:     .word\
+sizeInput:  .asciiz "Input size of the Integer list: "\
+listInput:  .asciiz "The Integer list: "\
+\
+.text\
+.globl main\
+\
+main:\
+    la $s4, result\
+    la $s6, list\
+    li $t2, 0       # Loop counter\
+    li $t3, 0       # Offset for list\
+\
+    # Display Size Prompt\
+    li $v0, 4\
+    la $a0, sizeInput\
+    syscall\
+\
+    # Receive integer size\
+    li $v0, 5\
+    syscall\
+    sw $v0, size\
+    lw $s7, size\
+\
+    # Prompt for list input\
+    li $v0, 4\
+    la $a0, listInput\
+    syscall\
+\
+    move $a2, $s7   # Load size into $a2\
+    la $t3, 0($s6)  # Load address of list into $t3\
+\
+forListInput:\
+    li $v0, 5\
+    syscall\
+    sw $v0, 0($t3)\
+    addi $t3, $t3, 4\
+    addi $t2, $t2, 1\
+    bne $t2, $a2, forListInput\
+\
+mergeSort:\
+    li $t4, 2 \
+    la $a0, list\
+    lw $a2, size\
+    li $t7, 4 \
+    addi $a1, $a0, 4 \
+\
+    div $s7, $t4    # Get iteration count for loop\
+    mflo $t5        # Iteration count for merging process\
+    move $t9, $t5\
+    addi $t8, $t8, 1    # Size for each list\
+    add $a2, $t8, $zero\
+    add $a3, $t8, $zero\
+\
+forSingleList:\
+    jal merge\
+    addi $a0, $a0, 8\
+    addi $a1, $a1, 8\
+    addi $t9, $t9, -1\
+    beq $s7, 2, sorted\
+    bnez $t9, forSingleList\
+\
+outterLoop:\
+    move $a0, $s6\
+    sll $t8, $t8, 1\
+    beq $t8, $s7, sorted\
+    sll $t7, $t7, 1\
+    add $a1, $a0, $t7\
+    div $t5, $t4\
+    sll $t1, $t8, 3\
+\
+    mflo $t5\
+    add $a1, $a0, $t7\
+    add $t9, $t5, $zero\
+    add $a2, $t8, $zero\
+    add $a3, $t8, $zero\
+\
+innerLoop:\
+    jal merge\
+    add $a0, $a0, $t1\
+    add $a1, $a1, $t1\
+    addi $t9, $t9, -1\
+    beqz $t9, outterLoop\
+    j innerLoop\
+\
+merge:\
+    # Save registers\
+    addi $sp, $sp, -48\
+    sw $ra, 0($sp)\
+    sw $t0, 4($sp)\
+    sw $t1, 8($sp)\
+    sw $t3, 12($sp)\
+    sw $t4, 16($sp)\
+    sw $t5, 20($sp)\
+    sw $t6, 24($sp)\
+    sw $t7, 28($sp)\
+    sw $t8, 32($sp)\
+    sw $t9, 36($sp)\
+    sw $a0, 40($sp)\
+    sw $a1, 44($sp)\
+\
+    move $t5, $a2\
+    move $t6, $a3\
+    add $t7, $t5, $t6   # Size of Result array\
+    add $t8, $t7, $zero\
+\
+    la $s1, result\
+    move $s1, $s4\
+\
+Loop:\
+    beqz $t7, endMerge\
+    lw $t0, 0($a0)\
+    lw $t1, 0($a1)\
+    beqz $t5, storeList2\
+    beqz $t6, storeList1\
+    slt $t3, $t0, $t1\
+    beq $t3, 1, storeList1\
+    beq $t3, 0, storeList2\
+\
+storeList1:\
+    sw $t0, 0($s1)\
+    addi $s1, $s1, 4\
+    addi $a0, $a0, 4\
+    addi $t7, $t7, -1\
+    addi $t5, $t5, -1\
+    j Loop\
+\
+storeList2:\
+    sw $t1, 0($s1)\
+    addi $s1, $s1, 4\
+    addi $a1, $a1, 4\
+    addi $t7, $t7, -1\
+    addi $t6, $t6, -1\
+    j Loop\
+\
+endMerge:\
+    # Restore registers\
+    lw $a1, 44($sp)\
+    lw $a0, 40($sp)\
+    lw $t9, 36($sp)\
+    lw $t8, 32($sp)\
+    lw $t7, 28($sp)\
+    lw $t6, 24($sp)\
+    lw $t5, 20($sp)\
+    lw $t4, 16($sp)\
+    lw $t3, 12($sp)\
+    lw $t1, 8($sp)\
+    lw $t0, 4($sp)\
+    lw $ra, 0($sp)\
+    addi $sp, $sp, 48\
+    la $v0, 0($a0)\
+\
+    # Copy result back to original list\
+    move $s1, $s4\
+    move $s2, $a0\
+    sll $s0, $a2, 1\
+\
+resultLoop:\
+    lw $s3, 0($s1)\
+    sw $s3, 0($s2)\
+    addi $s1, $s1, 4\
+    addi $s2, $s2, 4\
+    addi $s0, $s0, -1\
+    bnez $s0, resultLoop\
+\
+    move $v0, $a0\
+    jr $ra\
+\
+sorted:\
+    move $t0, $s6\
+    move $t9, $s7\
+\
+printLoop:\
+    beqz $t9, END\
+    lw $a0, 0($t0)\
+    li $v0, 1\
+    syscall\
+\
+    li $v0, 11\
+    li $a0, 32      # Space character\
+    syscall\
+\
+    add $t0, $t0, 4\
+    addi $t9, $t9, -1\
+    j printLoop\
+\
+END:\
+    li $v0, 10\
+    syscall}
